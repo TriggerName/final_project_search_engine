@@ -1,0 +1,24 @@
+# Исключение временных файлов
+*.tmp
+*.log
+
+# Исключение файлов и папок сборки
+/build/
+*.o
+*.obj
+*.so
+*.exe
+
+# Исключение файлов IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Исключение временных файлов macOS
+.DS_Store
+
+# Исключение файлов CMake
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
