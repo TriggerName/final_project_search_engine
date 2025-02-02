@@ -2,22 +2,42 @@
 #include <sstream>
 #include <algorithm>
 #include <unordered_map>
+#include <cctype>
+
+// Функция для нормализации слова: переводим в lowercase, удаляем пунктуацию
+static std::string NormalizeWord(const std::string& rawWord) {
+    std::string result;
+    result.reserve(rawWord.size());
+    for (char c : rawWord) {
+        result.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+    }
+    // Удаляем любые знаки пунктуации
+    result.erase(
+        std::remove_if(result.begin(), result.end(), [](unsigned char ch){
+            return std::ispunct(ch);
+        }),
+        result.end()
+    );
+    return result;
+}
 
 void InvertedIndex::UpdateDocumentBase(const std::vector<std::string>& input_docs) {
-    docs = input_docs; // Обновляем базу документов
-    freq_dictionary.clear(); // Очищаем словарь
+    docs = input_docs; 
+    freq_dictionary.clear(); 
 
     for (size_t doc_id = 0; doc_id < docs.size(); ++doc_id) {
-        std::unordered_map<std::string, size_t> word_count; // Локальный счётчик слов
-
-        // Разбиваем текст на слова
+        std::unordered_map<std::string, size_t> word_count;
         std::istringstream stream(docs[doc_id]);
-        std::string word;
-        while (stream >> word) {
-            ++word_count[word];
+        std::string rawWord;
+
+        while (stream >> rawWord) {
+            // Нормализуем
+            std::string word = NormalizeWord(rawWord);
+            if (!word.empty()) {
+                ++word_count[word];
+            }
         }
 
-        // Обновляем freq_dictionary
         for (const auto& [word, count] : word_count) {
             freq_dictionary[word].push_back({doc_id, count});
         }
@@ -25,8 +45,9 @@ void InvertedIndex::UpdateDocumentBase(const std::vector<std::string>& input_doc
 }
 
 std::vector<Entry> InvertedIndex::GetWordCount(const std::string& word) const {
-    if (freq_dictionary.find(word) != freq_dictionary.end()) {
-        return freq_dictionary.at(word);
+    auto it = freq_dictionary.find(word);
+    if (it != freq_dictionary.end()) {
+        return it->second;
     }
     return {};
 }

@@ -10,7 +10,6 @@ struct RelativeIndex {
     size_t doc_id;  // Идентификатор документа
     float rank;     // Относительная релевантность
 
-    // Оператор сравнения для тестов
     bool operator==(const RelativeIndex& other) const {
         return doc_id == other.doc_id && rank == other.rank;
     }
@@ -18,13 +17,15 @@ struct RelativeIndex {
 
 class SearchServer {
 public:
-    explicit SearchServer(InvertedIndex& idx) : index(idx) {}
+    // Добавлен аргумент по умолчанию = 5 для maxResponses
+    SearchServer(InvertedIndex& idx, int maxResponses = 5)
+        : index(idx), maxResponses_(maxResponses) {}
 
-    // Метод обработки поисковых запросов
     std::vector<std::vector<RelativeIndex>> search(const std::vector<std::string>& queries_input);
 
 private:
-    InvertedIndex& index;  // Ссылка на инвертированный индекс
+    InvertedIndex& index;
+    int maxResponses_;  // Храним лимит ответов
 };
 
 #endif // SEARCH_SERVER_H
