@@ -1,7 +1,7 @@
 #include "converter_json.h"
 #include <fstream>
 #include <iostream>
-#include <iomanip> // для setw, если нужно красиво форматировать вывод
+#include <iomanip>
 
 void ConverterJSON::loadConfig(const std::string& filename) {
     std::ifstream file(filename);
@@ -11,7 +11,8 @@ void ConverterJSON::loadConfig(const std::string& filename) {
     try {
         file >> config;  // Читаем JSON в объект `config`
     } catch (const std::exception& e) {
-        throw std::runtime_error("Ошибка при чтении файла конфигурации: " + filename + ". Детали: " + std::string(e.what()));
+        throw std::runtime_error("Ошибка при чтении файла конфигурации: " + filename + 
+                                 ". Детали: " + std::string(e.what()));
     }
 
     if (!config.contains("config") || !config["config"].is_object()) {
@@ -20,16 +21,29 @@ void ConverterJSON::loadConfig(const std::string& filename) {
 
     auto cfg = config["config"];
 
+    // Проверка поля "name"
     if (!cfg.contains("name") || !cfg["name"].is_string() || cfg["name"].get<std::string>().empty()) {
         throw std::runtime_error("config.json has no valid 'name' field");
     }
     name_ = cfg["name"].get<std::string>();
 
+    // Проверка поля "version"
     if (!cfg.contains("version") || !cfg["version"].is_string() || cfg["version"].get<std::string>().empty()) {
         throw std::runtime_error("config.json has no valid 'version' field");
     }
     version_ = cfg["version"].get<std::string>();
 
+    // >>> Добавляем проверку, что версия совпадает, скажем, с "0.1"
+    {
+        std::string appVersion = "0.1";
+        if (version_ != appVersion) {
+            throw std::runtime_error("config.json has incorrect file version (expected " 
+                                     + appVersion + ", got " + version_ + ")");
+        }
+    }
+    // <<< конец вставки >>>
+
+    // Проверка поля "max_responses"
     if (cfg.contains("max_responses")) {
         if (!cfg["max_responses"].is_number_integer()) {
             throw std::runtime_error("config.json has 'max_responses' but it's not an integer");
@@ -63,7 +77,8 @@ void ConverterJSON::processRequests(const std::string& filename) {
             std::cout << "Обработка запроса: " << request.get<std::string>() << std::endl;
         }
     } catch (const std::exception& e) {
-        throw std::runtime_error("Ошибка при обработке запросов из файла: " + filename + ". Детали: " + std::string(e.what()));
+        throw std::runtime_error("Ошибка при обработке запросов из файла: " + filename + 
+                                 ". Детали: " + std::string(e.what()));
     }
 }
 
@@ -79,16 +94,13 @@ void ConverterJSON::putAnswers(const std::vector<std::vector<std::pair<int, floa
         else             requestName = "request"   + std::to_string(i + 1);
 
         if (results[i].empty()) {
-            // Ни одного документа
             nlohmann::json requestNode;
             requestNode["result"] = "false";
             answersNode[requestName] = requestNode;
         } else {
-            // Нашлись документы
             nlohmann::json requestNode;
             requestNode["result"] = "true";
 
-            // Допустим, если > 1 документа — массив "relevance"
             if (results[i].size() > 1) {
                 nlohmann::json relevanceArray = nlohmann::json::array();
                 for (auto const& [docid, rank] : results[i]) {
